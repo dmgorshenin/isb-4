@@ -1,6 +1,10 @@
 import logging
 
 
+logger = logging.getLogger()
+logger.setLevel('INFO')
+
+
 def luhn_algorithm(card_number: str) -> bool:
     try:
         if not card_number.isdigit():
@@ -15,6 +19,7 @@ def luhn_algorithm(card_number: str) -> bool:
                     current_digit -= 9
             total_sum += current_digit
             is_second_digit = not is_second_digit
+        logging.info('The Luhn algorithm has worked successfully.')
         return total_sum % 10 == 0
     except Exception as err:
         logging.exception(f"Error: {err}")
