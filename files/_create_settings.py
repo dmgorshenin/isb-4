@@ -4,7 +4,8 @@ SETTINGS = {
     'bin': 'files/bin.txt',
     'hash': 'files/hash.txt',
     'last_symbol': 'files/last_symbol.txt',
-    'card_number': 'files/card_number.txt'
+    'card_number': 'files/card_number.txt',
+    'result':'files/results/result.txt'
 }
 
 if __name__ == '__main__':
