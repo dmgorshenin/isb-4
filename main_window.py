@@ -7,7 +7,6 @@ from system_files.luhn_algorithm import luhn_algorithm
 from system_files.make_plot import make_plot
 from system_files.recovery_card import recover_card_number
 import multiprocessing as mp
-import matplotlib.pyplot as plt
 
 
 DEFAULT_FILE_SETTINGS = 'files/settings.json'
