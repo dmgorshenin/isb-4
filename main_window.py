@@ -2,7 +2,12 @@ import sys
 from time import time
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QLabel, QProgressBar,
                              QPushButton, QLineEdit, QFileDialog, QMessageBox, QApplication)
-from system_files.card_recovery import *
+from system_files.file_system import FilesSystem
+from system_files.luhn_algorithm import luhn_algorithm
+from system_files.make_plot import make_plot
+from system_files.recovery_card import recover_card_number
+import multiprocessing as mp
+import matplotlib.pyplot as plt
 
 
 DEFAULT_FILE_SETTINGS = 'files/settings.json'
@@ -65,11 +70,11 @@ class RecoveryCardGUI(QMainWindow):
         try:
             file_name, _ = QFileDialog.getOpenFileName(
                 self, 'Open Settings File', '', 'Settings Files (*.json)')
-            self._restore_system = RecoverySystem(file_name)
+            self._restore_system = FilesSystem(file_name)
             QMessageBox.information(
                 self, 'Settings', f'Settings file successfully loaded from file {file_name}')
         except Exception as err:
-            self._restore_system = RecoverySystem(DEFAULT_FILE_SETTINGS)
+            self._restore_system = FilesSystem(DEFAULT_FILE_SETTINGS)
             QMessageBox.information(
                 self, 'Settings', f'Settings file was not loaded from file {file_name}.'
                 f'The default path was applied.\nPath: {DEFAULT_FILE_SETTINGS}')
@@ -88,7 +93,7 @@ class RecoveryCardGUI(QMainWindow):
                 QMessageBox.information(
                     self, 'Сhecking the correctness of the card', 'The card number is incorrect.')
             else:
-                mark = self._restore_system.luhn_algorithm(str(card_number))
+                mark = luhn_algorithm(str(card_number))
                 self._restore_system.settings['result'] = f'{card_number} is {mark}'
                 self._restore_system.save_settings()
                 QMessageBox.information(
@@ -112,13 +117,13 @@ class RecoveryCardGUI(QMainWindow):
             if not self.number_cores_input.text():
                 start = time()
                 cores = mp.cpu_count()
-                card_number = self._restore_system.recover_card_number(
+                card_number = recover_card_number(
                     self._restore_system.hash, self._restore_system.last_symbols, self._restore_system.bin, update_progress)
                 end = time()
             else:
                 start = time()
                 cores = int(self.number_cores_input.text())
-                card_number = self._restore_system.recover_card_number(
+                card_number = recover_card_number(
                     self._restore_system.hash, self._restore_system.last_symbols, self._restore_system.bin, update_progress, cores)
                 end = time()
             self.pbar.setValue(0)
@@ -137,15 +142,7 @@ class RecoveryCardGUI(QMainWindow):
             return
         try:
             stats = self._restore_system.load_stat()
-            x = stats.keys()
-            y = stats.values()
-            figure = plt.figure(figsize=(30, 5))
-            plt.xlabel('Количество ядер')
-            plt.ylabel('Время выполнения (сек)')
-            plt.title('Гистограмма времени выполнения от количества ядер')
-            plt.bar(x, y, color="orange", width=0.1)
-            plt.show()
-            self._restore_system.save_plot_image(figure)
+            self._restore_system.save_plot_image(make_plot(stats))
         except Exception as err:
             QMessageBox.information(
                 self, 'Build image', f'Something went wrong.\n{err.__str__}')
