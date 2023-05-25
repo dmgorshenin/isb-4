@@ -1,9 +1,8 @@
 import sys
 from time import time
-from PyQt5.QtWidgets import (QMainWindow, QWidget, QLabel,
+from PyQt5.QtWidgets import (QMainWindow, QWidget, QLabel, QProgressBar,
                              QPushButton, QLineEdit, QFileDialog, QMessageBox, QApplication)
 from system_files.card_recovery import *
-from system_files.luhn_algorithm import luhn_algorithm
 
 
 DEFAULT_FILE_SETTINGS = 'files/settings.json'
@@ -11,10 +10,15 @@ DEFAULT_FILE_SETTINGS = 'files/settings.json'
 
 class RecoveryCardGUI(QMainWindow):
     def __init__(self) -> None:
+        """Initialization of the application window.
+        """
         super().__init__()
         self.are_settings_loaded = False
         self.setWindowTitle('Restore Card Number')
         self.setGeometry(100, 100, 500, 350)
+        self.pbar = QProgressBar(self)
+        self.pbar.setGeometry(50, 300, 450, 25)
+        self.pbar.setMaximum(100)
         self.central_widget = QWidget(self)
         self.setCentralWidget(self.central_widget)
         self.settings_load_label = QLabel(
@@ -56,6 +60,8 @@ class RecoveryCardGUI(QMainWindow):
             self.check_luhn)
 
     def init_settings(self) -> None:
+        """Settings initialization.
+        """
         try:
             file_name, _ = QFileDialog.getOpenFileName(
                 self, 'Open Settings File', '', 'Settings Files (*.json)')
@@ -71,19 +77,20 @@ class RecoveryCardGUI(QMainWindow):
             self.are_settings_loaded = True
 
     def check_luhn(self) -> None:
+        """Сhecking the card number for validity.
+        """
         if not self.are_settings_loaded:
             self.init_settings()
             return
         try:
-            if not self.card_number:
+            card_number = self._restore_system.settings['card_number']
+            if card_number == 0:
                 QMessageBox.information(
                     self, 'Сhecking the correctness of the card', 'The card number is incorrect.')
             else:
-                mark = luhn_algorithm(self.card_number)
-                self._restore_system.save_text(
-                    self.card_number, self._restore_system.settings['card_number'])
-                self._restore_system.save_text(
-                    f'{self.card_number} is {mark}', self._restore_system.settings['result'])
+                mark = self._restore_system.luhn_algorithm(str(card_number))
+                self._restore_system.settings['result'] = f'{card_number} is {mark}'
+                self._restore_system.save_settings()
                 QMessageBox.information(
                     self, 'Сhecking the correctness of the card', 'The card number is correct.')
         except Exception as err:
@@ -92,30 +99,39 @@ class RecoveryCardGUI(QMainWindow):
             pass
 
     def restore_card_number(self) -> None:
+        """Selects the BIN cards for this hash.
+        """
         if not self.are_settings_loaded:
             self.init_settings()
             return
         try:
+            self.pbar.setValue(0)
+
+            def update_progress(progress: int) -> None:
+                self.pbar.setValue(progress)
             if not self.number_cores_input.text():
                 start = time()
                 cores = mp.cpu_count()
-                self.card_number = self._restore_system.recover_card_number(
-                    self._restore_system.hash, self._restore_system.last_symbols, self._restore_system.bin)
+                card_number = self._restore_system.recover_card_number(
+                    self._restore_system.hash, self._restore_system.last_symbols, self._restore_system.bin, update_progress)
                 end = time()
             else:
                 start = time()
                 cores = int(self.number_cores_input.text())
-                self.card_number = self._restore_system.recover_card_number(
-                    self._restore_system.hash, self._restore_system.last_symbols, self._restore_system.bin, cores)
+                card_number = self._restore_system.recover_card_number(
+                    self._restore_system.hash, self._restore_system.last_symbols, self._restore_system.bin, update_progress, cores)
                 end = time()
-            self._restore_system.save_stat(end-start, cores)
-            QMessageBox.information(
-                self, 'Restore Card Number', 'Successfull!')
+            self.pbar.setValue(0)
+            self._restore_system.settings['card_number'] = card_number
+            self._restore_system.save_settings()
+            self._restore_system.save_stat(end - start, cores)
         except Exception as err:
             QMessageBox.information(
                 self, 'Restore Card Number', f'Something went wrong.\n{err.__str__}')
 
     def make_plot(self) -> None:
+        """Creates a histogram using matplotlib.
+        """
         if not self.are_settings_loaded:
             self.init_settings()
             return

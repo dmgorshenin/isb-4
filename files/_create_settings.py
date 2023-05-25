@@ -1,13 +1,14 @@
 import json
 
+
 SETTINGS = {
-    'bin': 'files/bin.txt',
-    'hash': 'files/hash.txt',
-    'last_symbol': 'files/last_symbol.txt',
-    'card_number': 'files/card_number.txt',
-    'result': 'files/results/result.txt',
-    'stats': 'files/results/stats.csv',
-    'plot': 'files/results/plot.jpg'
+    'bin': 220220,
+    'hash': 'bf67709b1216cb66038f3ae5ad2b4c066be03cbb',
+    'last_symbol': 5688,
+    'card_number': 0,
+    'result': '',
+    'stats': 'files/stats.csv',
+    'plot': 'files/plot.jpg'
 }
 
 if __name__ == '__main__':
